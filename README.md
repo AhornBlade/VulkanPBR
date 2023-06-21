@@ -1,2 +1,2 @@
 # VulkanPBR
-Vulkan PBR
+Vulkan PBR Renderer
