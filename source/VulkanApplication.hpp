@@ -21,6 +21,7 @@ public:
 		createSurface();
 		choosePhysicalDevice();
 		createDevice();
+		createSwapchain();
 	}
 
 
@@ -37,11 +38,14 @@ private:
 	vkr::Queue graphicsQueue{nullptr};
 	vkr::Queue presentQueue{nullptr};
 	vkr::Queue transferQueue{nullptr};
+	vkr::SwapchainKHR swapchain{nullptr};
+	std::vector<vk::Image> swapchainImages{};
+	std::vector<vkr::ImageView> swapchainImageViews{};
 
 	void createInstance();
 	void createSurface();
 	void choosePhysicalDevice();
-
 	void createDevice();
+	void createSwapchain();
 
 };

@@ -125,3 +125,75 @@ void VulkanApplication::createDevice()
 	presentQueue = vkr::Queue{ device, queueCreateInfos[0].queueFamilyIndex, 1 };
 	transferQueue = vkr::Queue{ device, queueCreateInfos[0].queueFamilyIndex, 2 };
 }
+
+void VulkanApplication::createSwapchain()
+{
+	auto surfaceFormats = physicalDevice.getSurfaceFormatsKHR(*surface);
+	auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+	auto surfacePresentModes = physicalDevice.getSurfacePresentModesKHR(*surface);
+
+	vk::SurfaceFormatKHR enabledFormat = surfaceFormats[0];
+	for (auto& surfaceFormat : surfaceFormats)
+	{
+		if (surfaceFormat.format == vk::Format::eB8G8R8A8Srgb && surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
+		{
+			enabledFormat = surfaceFormat;
+			break;
+		}
+	}
+
+	vk::PresentModeKHR enabledPresentMode = surfacePresentModes[0];
+
+	for (auto& presentMode : surfacePresentModes)
+	{
+		if (presentMode == vk::PresentModeKHR::eMailbox)
+		{
+			enabledPresentMode = presentMode;
+			break;
+		}
+	}
+
+	vk::SwapchainCreateInfoKHR createInfo{};
+	createInfo.setSurface(*surface);
+
+	createInfo.setMinImageCount((surfaceCapabilities.minImageCount == surfaceCapabilities.maxImageCount) ?
+		surfaceCapabilities.maxImageCount : (surfaceCapabilities.minImageCount + 1));
+	createInfo.setImageExtent(surfaceCapabilities.currentExtent);
+	createInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
+	createInfo.setImageArrayLayers(1);
+	createInfo.setImageSharingMode(vk::SharingMode::eExclusive);
+	createInfo.setImageFormat(enabledFormat.format);
+	createInfo.setImageColorSpace(enabledFormat.colorSpace);
+
+	createInfo.setPreTransform(surfaceCapabilities.currentTransform);
+	createInfo.setClipped(VK_TRUE);
+	createInfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);
+	createInfo.setPresentMode(enabledPresentMode);
+
+	swapchain = vkr::SwapchainKHR{ device, createInfo };
+
+	std::cout << "Info: Success to create swapchain\n";
+
+	swapchainImages = swapchain.getImages();
+
+	vk::ImageViewCreateInfo imageViewCreateInfo{};
+	imageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+	imageViewCreateInfo.setFormat(enabledFormat.format);
+	imageViewCreateInfo.components.r = vk::ComponentSwizzle::eIdentity;
+	imageViewCreateInfo.components.g = vk::ComponentSwizzle::eIdentity;
+	imageViewCreateInfo.components.b = vk::ComponentSwizzle::eIdentity;
+	imageViewCreateInfo.components.a = vk::ComponentSwizzle::eIdentity;
+	imageViewCreateInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+	imageViewCreateInfo.subresourceRange.levelCount = 1;
+	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+	imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+	for (auto& swapchainImage : swapchainImages)
+	{
+		imageViewCreateInfo.setImage(swapchainImage);
+		swapchainImageViews.emplace_back(vkr::ImageView{device, imageViewCreateInfo});
+	}
+
+	std::cout << "Info: Success to create image views\n";
+}
